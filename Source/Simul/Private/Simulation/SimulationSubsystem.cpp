@@ -51,28 +51,34 @@ void USimulationSubsystem::OnGameModeInitialized(AGameModeBase* GameModeBase)
 		return;
 	}
 
-	// Create and init states used by simulation 
-	for (FName& StateId : CurrentSimulation.States->GetRowNames())
+	if (CurrentSimulation.States)
 	{
-		FStateDescriptor* StateDescriptor = CurrentSimulation.States->FindRow<FStateDescriptor>(StateId, "State descriptor data table");
-		UState* State = NewObject<UState>(this);
-		State->Init(StateDescriptor);
-		StatesMap.Add(StateId, State);
+		// Create and init states used by simulation 
+		for (FName& StateId : CurrentSimulation.States->GetRowNames())
+		{
+			FStateDescriptor* StateDescriptor = CurrentSimulation.States->FindRow<FStateDescriptor>(StateId, "State descriptor data table");
+			UState* State = NewObject<UState>(this);
+			State->Init(StateDescriptor);
+			StatesMap.Add(StateId, State);
+		}
+
+		// Post init all states
+		for (const TPair<FName, UState*>& Pair : StatesMap)
+		{
+			FStateDescriptor* StateDescriptor = CurrentSimulation.States->FindRow<FStateDescriptor>(Pair.Key, "State descriptor data table");
+			Pair.Value->PostInit(StateDescriptor);
+		}
 	}
 
-	// Post init all states
-	for (const TPair<FName, UState*>& Pair : StatesMap)
+	if (CurrentSimulation.Mistakes)
 	{
-		FStateDescriptor* StateDescriptor = CurrentSimulation.States->FindRow<FStateDescriptor>(Pair.Key, "State descriptor data table");
-		Pair.Value->PostInit(StateDescriptor);
-	}
-	
-	for (FName& MistakeId : CurrentSimulation.Mistakes->GetRowNames())
-	{
-		FMistakeDescriptor* MistakeDescriptor = CurrentSimulation.Mistakes->FindRow<FMistakeDescriptor>(MistakeId, "Mistake descriptor data table");
-		UMistake* Mistake = NewObject<UMistake>(this);
-		Mistake->Init(MistakeId, MistakeDescriptor);
-		MistakesMap.Add(MistakeId, Mistake);
+		for (FName& MistakeId : CurrentSimulation.Mistakes->GetRowNames())
+		{
+			FMistakeDescriptor* MistakeDescriptor = CurrentSimulation.Mistakes->FindRow<FMistakeDescriptor>(MistakeId, "Mistake descriptor data table");
+			UMistake* Mistake = NewObject<UMistake>(this);
+			Mistake->Init(MistakeId, MistakeDescriptor);
+			MistakesMap.Add(MistakeId, Mistake);
+		}
 	}
 
 	// Load required stream level
